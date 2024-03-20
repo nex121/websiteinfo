@@ -1,3 +1,5 @@
+import time
+
 import requests
 from bs4 import BeautifulSoup
 import warnings
@@ -25,7 +27,7 @@ def extract_data(html):
     return result
 
 
-def icp_search(domain):
+def icp_search0(domain):
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63",
@@ -41,3 +43,35 @@ def icp_search(domain):
         return formatted_data
     except Exception as e:
         return None
+
+
+def icp_search1(domain):
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63",
+            "Content-Type": "application/json"
+        }
+        res = requests.get("https://www.aizhan.com/cha/" + domain + "/", headers=headers, verify=False).text
+
+        if "备案信息" not in res:
+            return None
+        soup = BeautifulSoup(res, 'html.parser')
+        icp_number = soup.find("a", id="icp_icp").text
+        icp_type = soup.find("span", id="icp_type").text
+        icp_company = soup.find("span", id="icp_company").text
+        icp_passtime = soup.find("span", id="icp_passtime").text
+
+        formatted_data = {"ICP_Type": icp_type.strip(), "Company_Name": icp_company.strip(),
+                          "ICP_Number": icp_number.strip(), "Verify_Time": icp_passtime.strip()}
+        # 防止请求过快被禁
+        time.sleep(2)
+        return formatted_data
+    except Exception as e:
+        return None
+
+
+def icp_search(domain):
+    if icp_search0(domain):
+        return icp_search0(domain)
+    else:
+        return icp_search1(domain)
