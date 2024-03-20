@@ -2,16 +2,21 @@ import requests
 from bs4 import BeautifulSoup
 import ipaddress
 from urllib.parse import urlparse
-
 import beian
 
 
 def get_external_links(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0',
+        'Referer': 'https://www.baidu.com/'
+    }
     # 发送请求并获取网页内容
-    response = requests.get(url)
-    if response.status_code != 200:
+    try:
+        response = requests.get(url, headers=headers, verify=False, timeout=3)
+        if response.status_code != 200:
+            return []
+    except:
         return []
-
     # 使用 BeautifulSoup 解析网页内容
     soup = BeautifulSoup(response.content, 'html.parser')
 
@@ -99,10 +104,17 @@ def is_same_subdomain(domain1, domain2):
 
 def is_recorded(domain1, domain2):
     # domain type: test.com
+    domain_part1 = domain1.split('.')
+    domain_part2 = domain2.split('.')
+
+    # 至少需要两个部分
+    if len(domain_part1) < 2 or len(domain_part2) < 2:
+        return False
+
     try:
-        parts1 = beian.icp_search(domain1)['Company_Name']
-        parts2 = beian.icp_search(domain2)['Company_Name']
-        print(parts1, parts2)
+        parts1 = beian.icp_search(domain_part1[-2])['Company_Name']
+        parts2 = beian.icp_search(domain_part2[-2])['Company_Name']
+        print(domain_part1[-2], domain_part2[-2])
         if parts1 == parts2:
             return True
         else:
@@ -111,8 +123,12 @@ def is_recorded(domain1, domain2):
         return False
 
 
+def get_site_info_result(url):
+    return filter_external_links(get_external_links(url), url)
+
+
 if __name__ == '__main__':
-    url = 'https://www.example.com'
+    url = 'https://www.example.cn/'
     external_links = get_external_links(url)
     result = filter_external_links(external_links, url)
     print(result)
